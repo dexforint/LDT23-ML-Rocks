@@ -4,7 +4,7 @@ from glob import glob
 from tqdm.auto import tqdm
 import gradio
 from sahi import AutoDetectionModel
-from sahi.predict import get_prediction
+from sahi.predict import get_prediction, get_sliced_prediction
 from sahi.utils.cv import read_image
 from sahi.utils.cv import read_video, visualize_object_predictions
 from sahi.utils.file_handlers import video_writer
@@ -13,7 +13,7 @@ from sahi.utils.file_handlers import video_writer
 detection_model = AutoDetectionModel.from_pretrained(
     model_type="yolov8",
     model_path="./models/yolov8s.pt",
-    confidence_threshold=0.3,
+    confidence_threshold=0.2,
     device="cuda:0",  # or 'cuda:0'
 )
 
@@ -41,7 +41,16 @@ def main(args):
     # Обрабатываем каждый кадр видео
     for frame in video["frames"]:
         # Детекция объектов на кадре
-        result = detection_model(frame)
+        # result = detection_model(frame)
+        result = get_sliced_prediction(
+            frame,
+            detection_model,
+            slice_height=640,
+            slice_width=640,
+            overlap_height_ratio=0.2,
+            overlap_width_ratio=0.2,
+            verbose=False,
+        )
 
         # Визуализация результатов детекции на кадре
         result_frame = visualize_object_predictions(

@@ -1,8 +1,7 @@
 import gradio as gr
 import cv2
-import numpy as np
-from ultralytics import YOLO
-from sahi.predict import get_prediction
+from sahi import AutoDetectionModel
+from sahi.predict import get_prediction, get_sliced_prediction
 from sahi.postprocess.backend import PostprocessBackend
 from sahi.postprocess.objects import BoundingBox
 from sahi.utils.file import read_image
@@ -10,18 +9,32 @@ from sahi.utils.cv2 import draw_bbox
 from sahi.utils.torch import load_model_from_checkpoint
 
 # Загрузка модели
-model = load_model_from_checkpoint("models/yolov8s.pt")
-model.conf = 0.25  # Установка порога доверия для обнаружения объектов
+model = AutoDetectionModel.from_pretrained(
+    model_type="yolov8",
+    model_path="models/yolov8s.pt",
+    confidence_threshold=0.25,
+    device="cuda:0",
+)
 
 
 # Функция для обработки изображения
 def predict_image(image):
     img = read_image(image)
-    prediction = get_prediction(
-        image=img,
-        model=model,
-        postprocess_backend=PostprocessBackend.ALGORITHM,
-        return_postprocessed=True,
+    # prediction = get_prediction(
+    #     image=img,
+    #     model=model,
+    #     postprocess_backend=PostprocessBackend.ALGORITHM,
+    #     return_postprocessed=True,
+    # )
+
+    prediction = get_sliced_prediction(
+        img,
+        model,
+        slice_height=640,
+        slice_width=640,
+        overlap_height_ratio=0.2,
+        overlap_width_ratio=0.2,
+        verbose=False,
     )
 
     # Создание списка с результатами для каждого обнаруженного объекта
